@@ -6,6 +6,8 @@ import {
   getItemsOfTheDay,
   updateMasterItem,
   deleteMasterItem,
+  updateTodayItemQuantity,
+  unsetTodayItem,
 } from "../controllers/itemController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -20,5 +22,7 @@ router.delete("/master/:itemId", authMiddleware("admin"), deleteMasterItem);
 // Items of the Day routes
 router.post("/today", authMiddleware("admin"), setItemOfTheDay);
 router.get("/today", getItemsOfTheDay); // accessible by both roles
+router.patch("/today/:itemId/quantity", authMiddleware("admin"), updateTodayItemQuantity);
+router.patch("/today/:itemId/unset", authMiddleware("admin"), unsetTodayItem);
 
 export default router;

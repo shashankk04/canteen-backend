@@ -34,3 +34,24 @@ export const getTransactionSummary = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const getAllTransactions = async (req, res) => {
+  try {
+    const transactions = await Transaction.find()
+      .populate('employee', 'name email')
+      .sort({ createdAt: -1 });
+    res.status(200).json(transactions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMyTransactions = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const transactions = await Transaction.find({ employee: userId }).sort({ createdAt: -1 });
+    res.status(200).json(transactions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

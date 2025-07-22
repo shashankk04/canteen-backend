@@ -67,11 +67,11 @@ export const getMasterItemList = async (req, res) => {
   }
 };
 
-// PATCH /api/items/:itemId
+// PATCH /api/items/master/:itemId
 export const updateMasterItem = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const { name, price } = req.body;
+    const { name, price, quantity } = req.body;
 
     const item = await Item.findById(itemId);
 
@@ -85,10 +85,48 @@ export const updateMasterItem = async (req, res) => {
 
     if (name) item.name = name;
     if (price) item.price = price;
+    if (quantity !== undefined && quantity !== null) item.quantity = quantity;
 
     await item.save();
 
     res.status(200).json({ message: "Item updated successfully", item });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PATCH /api/items/today/:itemId/quantity
+export const updateTodayItemQuantity = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { quantity } = req.body;
+    if (quantity == null || quantity < 0) {
+      return res.status(400).json({ message: "Invalid quantity" });
+    }
+    const item = await Item.findById(itemId);
+    if (!item || !item.isTodayAvailable) {
+      return res.status(404).json({ message: "Item not found in today's items" });
+    }
+    item.quantity = quantity;
+    await item.save();
+    res.status(200).json({ message: "Today's item quantity updated", item });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PATCH /api/items/today/:itemId/unset
+export const unsetTodayItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const item = await Item.findById(itemId);
+    if (!item || !item.isTodayAvailable) {
+      return res.status(404).json({ message: "Item not found in today's items" });
+    }
+    item.isTodayAvailable = false;
+    item.quantity = 0; // Optionally reset quantity
+    await item.save();
+    res.status(200).json({ message: "Item removed from today's items", item });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -113,3 +113,78 @@ export const getEmployeeTransactions = async(req,res)=>{
     
   }
 }
+
+export const selfCredit = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { amount } = req.body;
+    if (!amount || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+    const user = await User.findById(userId);
+    if (!user || user.role !== "employee") {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    user.balance = (user.balance || 0) + amount;
+    await user.save();
+    await Transaction.create({
+      employee: user._id,
+      type: "credit",
+      amount,
+      source: "employee",
+      description: `Self-credited ₹${amount}`,
+    });
+    res.status(200).json({ balance: user.balance, message: `₹${amount} added to your account.` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMyProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId).select("-password");
+    if (!user || user.role !== "employee") {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { name } = req.body;
+    const user = await User.findById(userId);
+    if (!user || user.role !== "employee") {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    user.name = name || user.name;
+    await user.save();
+    res.status(200).json({ name: user.name, email: user.email, balance: user.balance });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const changeMyPassword = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(userId);
+    if (!user || user.role !== "employee") {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
